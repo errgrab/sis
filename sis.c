@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #undef strlcpy
 #include "strlcpy.c"
@@ -17,6 +18,7 @@
 typedef struct server_s server_t;
 struct server_s {
 	int fd;
+	char *port;
 	char *pass;
 	bool online;
 };
@@ -32,8 +34,8 @@ void server_start(server_t *server) {
 	server->fd = listen_on(server->port);
 
 	while (server->online) {
-		int client_fd = accept_client(server_fd);
-		printf("Connected!");
+		int client_fd = accept_client(server->fd);
+		printf("Connected!\n");
 		close_socket(client_fd);
 	}
 }
@@ -64,7 +66,7 @@ int main(int ac, char **av) {
 				break;
 			case 'v':
 				printf("%s: version %s\n", args.av0, VERSION);
-				break;
+				return 0;
 			default:
 				fprintf(stderr, "%s: unknown option -%c\n", args.av0, opt);
 				return 1;
@@ -74,7 +76,7 @@ int main(int ac, char **av) {
 		printf("UNUSED ARGUMENT: %s\n", av[i]);
 	}
 
-	server_start();
-	server_deinit();
+	server_start(&server);
+	server_deinit(&server);
 	return 0;
 }
