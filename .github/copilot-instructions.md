@@ -12,7 +12,6 @@ This is a "suckless-styled" IRC server implemented in C following the principle 
 - `strlcpy.c` - Safe string copying implementation
 - `arg.h` - Command-line argument parsing library
 - `config.def.h` - Default configuration template
-- `config.h` - User configuration (generated from config.def.h)
 - `Makefile` - POSIX-compliant build system
 
 ### Coding Standards
