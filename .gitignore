@@ -1,3 +1,9 @@
+# Executable
+sis
+
+# Configuration file
+config.h
+
 # Prerequisites
 *.d
 
