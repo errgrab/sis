@@ -1,6 +1,22 @@
 #include <netdb.h>
+#include <string.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+
+static size_t strlcpy(char *dst, const char *src, size_t siz)
+{
+	char *d = dst;
+	const char *s = src;
+	size_t n = siz;
+	if (n != 0)
+		while (--n != 0) if ((*d++ = *s++) == '\0') break;
+	if (n == 0) {
+		if (siz != 0) *d = '\0';
+		while (*s++);
+	}
+	return(s - src - 1);
+}
 
 static void fatal(const char *fmt, ...) {
 	char buf[1024];

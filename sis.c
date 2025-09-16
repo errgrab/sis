@@ -13,9 +13,7 @@
 #include <sys/select.h>
 
 #undef strlcpy
-#include "strlcpy.c"
 #include "util.c"
-
 
 typedef struct client_s client_t;
 struct client_s {
