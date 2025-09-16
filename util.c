@@ -2,9 +2,17 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-static void fatal(const char *msg) {
-	perror(msg);
-	exit(-1);
+static void fatal(const char *fmt, ...) {
+	char buf[1024];
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof buf, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, "%s", buf);
+	if(fmt[0] && fmt[strlen(fmt) - 1] == ':')
+		fprintf(stderr, " %s\n", strerror(errno));
+	exit(1);
 }
 
 static int listen_on(char *port) {
@@ -17,21 +25,21 @@ static int listen_on(char *port) {
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 	if (getaddrinfo(NULL, port, &hints, &res) != 0)
-		fatal("ERR: getaddrinfo failed");
+		fatal("ERR: getaddrinfo failed:");
 	for (r = res; r; r = r->ai_next) {
 		if ((sockfd = socket(r->ai_family, r->ai_socktype, r->ai_protocol)) == -1)
 			continue;
 		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
-			fatal("ERR: setsockopt failed");
+			fatal("ERR: setsockopt failed:");
 		if (bind(sockfd, r->ai_addr, r->ai_addrlen) == 0)
 			break;
 		close(sockfd);
 	}
 	freeaddrinfo(res);
 	if (!r)
-		fatal("ERR: cannot bind socket");
+		fatal("ERR: cannot bind socket:");
 	if (listen(sockfd, 10) == -1)
-		fatal("ERR: listen failed");
+		fatal("ERR: listen failed:");
 	return sockfd;
 };
 
@@ -40,7 +48,7 @@ static int accept_client(int server_fd) {
 	socklen_t addr_size = sizeof(client_addr);
 	int client_fd = accept(server_fd, (struct sockaddr *)&client_addr, &addr_size);
 	if (client_fd == -1)
-		fatal("ERR: accept failed");
+		fatal("ERR: accept failed:");
 	return client_fd;
 }
 
@@ -49,19 +57,8 @@ static void close_socket(int fd) {
 		perror("ERR: close failed");
 }
 
+
 /*
-static void eprint(const char *fmt, ...) {
-	va_list ap;
-
-	va_start(ap, fmt);
-	vsnprintf(bufout, sizeof bufout, fmt, ap);
-	va_end(ap);
-	fprintf(stderr, "%s", bufout);
-	if(fmt[0] && fmt[strlen(fmt) - 1] == ':')
-		fprintf(stderr, " %s\n", strerror(errno));
-	exit(1);
-}
-
 static int dial(char *host, char *port) {
 	struct addrinfo hints;
 	struct addrinfo *res, *r;

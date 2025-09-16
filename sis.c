@@ -16,10 +16,6 @@
 #include "strlcpy.c"
 #include "util.c"
 
-#define MAXCLIENTS 128
-#define MAXMSG 512
-#define MAXNICK 16
-#define MAXCHAN 32
 
 typedef struct client_s client_t;
 struct client_s {
@@ -64,7 +60,7 @@ static void irc_send(int fd, const char *fmt, ...) {
 static client_t *client_new(int fd) {
 	client_t *client = malloc(sizeof(client_t));
 	if (!client)
-		fatal("ERR: malloc failed");
+		fatal("ERR: malloc failed:");
 	
 	client->fd = fd;
 	client->nick[0] = '\0';
@@ -214,9 +210,9 @@ static void handle_client(server_t *server, client_t *client) {
 }
 
 void server_init(server_t *server) {
-	server->port = "6667";
+	server->port = DEFAULT_PORT;
 	server->fd = -1;
-	server->pass = NULL;
+	server->pass = DEFAULT_PASS;
 	server->online = true;
 	server->clients = NULL;
 	server->channels = NULL;
@@ -247,14 +243,13 @@ void server_start(server_t *server) {
 		if (select(maxfd + 1, &readfds, NULL, NULL, NULL) == -1) {
 			if (errno == EINTR)
 				continue;
-			fatal("ERR: select failed");
+			fatal("ERR: select failed:");
 		}
 		
 		// Check for new connections
 		if (FD_ISSET(server->fd, &readfds)) {
 			int client_fd = accept_client(server->fd);
-			client_t *new_client = client_new(client_fd);
-			client_add(server, new_client);
+			client_add(server, client_new(client_fd));
 			printf("New client connected (fd: %d)\n", client_fd);
 		}
 		
