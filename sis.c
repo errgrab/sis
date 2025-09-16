@@ -21,6 +21,7 @@ struct client_s {
 	char real[MAXMSG];
 	char host[128];
 	bool registered;
+	bool authenticated;
 	client_t *next;
 };
 
@@ -49,9 +50,9 @@ static server_t *server_get(void) {
 #include "arg.c"
 #include "util.c"
 #include "client.c"
+#include "channel.c"
 #include "commands.c"
 #include "server.c"
-#include "channel.c"
 
 static void signal_handler(int sig) {
 	switch (sig) {
@@ -98,7 +99,7 @@ int main(int ac, char **av) {
 				}
 				break;
 			case 'v':
-				printf("%s: version %s\n", args.av0, VERSION);
+				printf("%s: version %s\n", args.av0, SERVER_VERSION);
 				return 0;
 			default:
 				fprintf(stderr, "%s: unknown option -%c\n", args.av0, opt);

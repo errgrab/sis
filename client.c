@@ -11,8 +11,9 @@ static client_t *client_new(int fd) {
 	client->nick[0] = '\0';
 	client->user[0] = '\0';
 	client->real[0] = '\0';
-	client->host[0] = '\0';
+    client->host[0] = '\0';
 	client->registered = false;
+	client->authenticated = false;
 	client->next = NULL;
 	
 	return client;
