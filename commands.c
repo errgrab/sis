@@ -1,22 +1,28 @@
 #include <string.h>
 #include <unistd.h>
 
+typedef struct {
+	char *name;
+	void (*func)(client_t *, char *);
+	bool requires_registration;
+} command_t;
+
 static void cmd_pass(client_t *client, char *args) {
 	if (client->registered) {
 		send_reply(client->fd, ":%s 462 :You may not reregister\r\n", SERVER_NAME);
 		return;
 	}
-	
+
 	if (!args || strlen(args) == 0) {
 		send_reply(client->fd, ":%s 461 PASS :Not enough parameters\r\n", SERVER_NAME);
 		return;
 	}
-	
+
 	if (server_get()->pass && strcmp(args, server_get()->pass) != 0) {
 		send_reply(client->fd, ":%s 464 :Password incorrect\r\n", SERVER_NAME);
 		return;
 	}
-	
+
 	client->authenticated = true;
 }
 
@@ -84,11 +90,6 @@ static void cmd_join(client_t *client, char *args) {
 	client_t *curr;
 	char *name;
 	
-	if (!client->registered) {
-		send_reply(client->fd, ":%s 451 :You have not registered\r\n", SERVER_NAME);
-		return;
-	}
-	
 	if (!args || strlen(args) == 0) {
 		send_reply(client->fd, ":%s 461 JOIN :Not enough parameters\r\n", SERVER_NAME);
 		return;
@@ -131,11 +132,6 @@ static void cmd_privmsg(client_t *client, char *args) {
 	client_t *target_client;
 	channel_t *target_channel;
 	char msg[MAXMSG];
-	
-	if (!client->registered) {
-		send_reply(client->fd, ":%s 451 :You have not registered\r\n", SERVER_NAME);
-		return;
-	}
 	
 	if (!args || strlen(args) == 0) {
 		send_reply(client->fd, ":%s 411 :No recipient given (PRIVMSG)\r\n", SERVER_NAME);
@@ -222,6 +218,18 @@ static void cmd_quit(client_t *client, char *args) {
 
 static void process_message(client_t *client, char *line) {
 	char *cmd, *args;
+	command_t *c;
+	
+	static command_t commands[] = {
+		{ "PASS",    cmd_pass,    false },
+		{ "NICK",    cmd_nick,    false },
+		{ "USER",    cmd_user,    false },
+		{ "PING",    cmd_ping,    false },
+		{ "QUIT",    cmd_quit,    false },
+		{ "JOIN",    cmd_join,    true  },
+		{ "PRIVMSG", cmd_privmsg, true  },
+		{ NULL,      NULL,        false }
+	};
 	
 	trim(line);
 	if (strlen(line) == 0)
@@ -230,21 +238,18 @@ static void process_message(client_t *client, char *line) {
 	cmd = line;
 	args = skip(line, ' ');
 	
-	if (strcmp(cmd, "PASS") == 0)
-		cmd_pass(client, args);
-	else if (strcmp(cmd, "NICK") == 0)
-		cmd_nick(client, args);
-	else if (strcmp(cmd, "USER") == 0)
-		cmd_user(client, args);
-	else if (strcmp(cmd, "PING") == 0)
-		cmd_ping(client, args);
-	else if (strcmp(cmd, "QUIT") == 0)
-		cmd_quit(client, args);
-	else if (strcmp(cmd, "JOIN") == 0)
-		cmd_join(client, args);
-	else if (strcmp(cmd, "PRIVMSG") == 0)
-		cmd_privmsg(client, args);
-	else if (client->registered)
+	for (c = commands; c->name; c++) {
+		if (strcmp(cmd, c->name) == 0) {
+			if (c->requires_registration && !client->registered) {
+				send_reply(client->fd, ":%s 451 :You have not registered\r\n", SERVER_NAME);
+				return;
+			}
+			c->func(client, args);
+			return;
+		}
+	}
+	
+	if (client->registered)
 		send_reply(client->fd, ":%s 421 %s %s :Unknown command\r\n", SERVER_NAME, client->nick, cmd);
 }
 
