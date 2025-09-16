@@ -17,7 +17,7 @@ struct client_s {
 	int fd;
 	char nick[MAXNICK];
 	char user[MAXNICK];
-	char realname[MAXMSG];
+	char real[MAXMSG];
 	char host[128];
 	bool registered;
 	client_t *next;
