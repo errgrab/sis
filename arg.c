@@ -1,6 +1,3 @@
-#ifndef ARG_H
-#define ARG_H
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,5 +38,3 @@ static char *arg_value(arg_t *arg, int ac, char **av) {
 		return av[arg->i++];
 	return NULL;
 }
-
-#endif

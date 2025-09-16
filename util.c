@@ -73,6 +73,18 @@ static void close_socket(int fd) {
 		perror("ERR: close failed");
 }
 
+static void send_reply(int fd, const char *fmt, ...) {
+	char buf[512];
+	va_list ap;
+	
+	va_start(ap, fmt);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+	
+	if (write(fd, buf, strlen(buf)) == -1)
+		perror("ERR: write failed");
+}
+
 
 /*
 static int dial(char *host, char *port) {

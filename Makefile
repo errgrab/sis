@@ -15,7 +15,7 @@ all: ${BIN}
 
 ${BIN}: ${@:=.o}
 
-${OBJ}: config.h util.c
+${OBJ}:
 
 .o:
 	${CC} -o $@ $< ${SIS_LDFLAGS}
@@ -29,12 +29,15 @@ config.h:
 clean:
 	rm -f ${BIN} ${OBJ} "${NAME}-${VERSION}.tar.gz"
 
+re: clean all
+
 dist:
 	mkdir -p "${NAME}-${VERSION}"
-	cp -fR LICENSE Makefile README arg.h config.def.h \
-		${SRC} util.c strlcpy.c "${NAME}-${VERSION}"
+	cp -fR LICENSE Makefile README.md arg.h config.def.h \
+		${SRC} util.c channel.c client.c commands.c server.c \
+		"${NAME}-${VERSION}"
 	tar -cf - "${NAME}-${VERSION}" | \
 		gzip -c > "${NAME}-${VERSION}.tar.gz"
 	rm -rf "${NAME}-${VERSION}"
 
-.PHONY: all clean dist
+.PHONY: all clean re dist
