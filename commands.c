@@ -127,6 +127,64 @@ static void cmd_join(client_t *client, char *args) {
 	send_reply(client->fd, ":%s 366 %s %s :End of /NAMES list\r\n", SERVER_NAME, client->nick, name);
 }
 
+static void cmd_part(client_t *client, char *args) {
+	channel_t *channel;
+	char *name, *message;
+	char part_msg[MAXMSG];
+	
+	if (!args || strlen(args) == 0) {
+		send_reply(client->fd, ":%s 461 PART :Not enough parameters\r\n", SERVER_NAME);
+		return;
+	}
+	
+	name = args;
+	message = skip(args, ' ');
+	
+	if (name[0] != '#') {
+		send_reply(client->fd, ":%s 403 %s :No such channel\r\n", SERVER_NAME, name);
+		return;
+	}
+	
+	channel = channel_find(name);
+	if (!channel) {
+		send_reply(client->fd, ":%s 403 %s :No such channel\r\n", SERVER_NAME, name);
+		return;
+	}
+	
+	/* Check if user is in channel */
+	client_t *curr;
+	bool in_channel = false;
+	for (curr = channel->clients; curr; curr = curr->next) {
+		if (curr == client) {
+			in_channel = true;
+			break;
+		}
+	}
+	
+	if (!in_channel) {
+		send_reply(client->fd, ":%s 442 %s :You're not on that channel\r\n", SERVER_NAME, name);
+		return;
+	}
+	
+	/* Send PART message to channel */
+	if (message && message[0] == ':')
+		message++;
+	
+	if (message && strlen(message) > 0) {
+		snprintf(part_msg, sizeof(part_msg), ":%s!%s@%s PART %s :%s\r\n", 
+			client->nick, client->user, client->host, name, message);
+	} else {
+		snprintf(part_msg, sizeof(part_msg), ":%s!%s@%s PART %s\r\n", 
+			client->nick, client->user, client->host, name);
+	}
+	
+	send_reply(client->fd, "%s", part_msg);
+	channel_send_all(channel, client, part_msg);
+	
+	/* Remove client from channel */
+	channel_remove_client(channel, client);
+}
+
 static void cmd_privmsg(client_t *client, char *args) {
 	char *target, *message;
 	client_t *target_client;
@@ -216,17 +274,19 @@ static void cmd_quit(client_t *client, char *args) {
 	client_free(client);
 }
 
+
 static void process_message(client_t *client, char *line) {
 	char *cmd, *args;
-	command_t *c;
+	const command_t *c;
 	
-	static command_t commands[] = {
+	static const command_t commands[] = {
 		{ "PASS",    cmd_pass,    false },
 		{ "NICK",    cmd_nick,    false },
 		{ "USER",    cmd_user,    false },
 		{ "PING",    cmd_ping,    false },
 		{ "QUIT",    cmd_quit,    false },
 		{ "JOIN",    cmd_join,    true  },
+		{ "PART",    cmd_part,    true  },
 		{ "PRIVMSG", cmd_privmsg, true  },
 		{ NULL,      NULL,        false }
 	};

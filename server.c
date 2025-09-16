@@ -80,8 +80,22 @@ static void server_stop(void) {
 	server->online = false;
 }
 
-static void server_deinit(void) {
+static void server_free(void) {
 	server_t *server = server_get();
 	if (server->fd != -1)
 		close_socket(server->fd);
+
+	client_t *client = server->clients;
+	while (client) {
+		client_t *next = client->next;
+		client_free(client);
+		client = next;
+	}
+
+	channel_t *channel = server->channels;
+	while (channel) {
+		channel_t *next = channel->next;
+		channel_free(channel);
+		channel = next;
+	}
 }

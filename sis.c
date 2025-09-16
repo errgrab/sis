@@ -113,6 +113,6 @@ int main(int ac, char **av) {
 
 	setup_signals();
 	server_start();
-	server_deinit();
+	server_free();
 	return 0;
 }
