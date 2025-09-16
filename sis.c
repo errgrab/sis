@@ -47,6 +47,7 @@ static server_t *server_get(void) {
 	return &server;
 }
 
+#undef strlcpy
 #include "arg.c"
 #include "util.c"
 #include "client.c"
