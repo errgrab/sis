@@ -81,8 +81,8 @@ static void send_reply(int fd, const char *fmt, ...) {
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 	
-	if (write(fd, buf, strlen(buf)) == -1)
-		perror("ERR: write failed");
+	if (send(fd, buf, strlen(buf), 0) == -1)
+		perror("ERR: send failed");
 }
 
 

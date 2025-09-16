@@ -2,7 +2,8 @@
 #include <errno.h>
 #include <sys/select.h>
 
-static void server_init(server_t *server) {
+static void server_init(void) {
+	server_t *server = server_get();
 	server->port = DEFAULT_PORT;
 	server->fd = -1;
 	server->pass = DEFAULT_PASS;
@@ -11,58 +12,76 @@ static void server_init(server_t *server) {
 	server->channels = NULL;
 }
 
-static void server_start(server_t *server) {
-	fd_set readfds;
-	int maxfd;
+static void server_start(void) {
+	server_t *server = server_get();
+	struct pollfd *pollfds;
+	int nfds, maxclients = 1024;
 	client_t *client, *next;
 	
 	server->fd = listen_on(server->port);
 	printf("IRC Server listening on port %s\n", server->port);
 	
+	pollfds = calloc(maxclients + 1, sizeof(struct pollfd));
+	if (!pollfds)
+		fatal("ERR: calloc failed:");
+	
 	while (server->online) {
-		FD_ZERO(&readfds);
-		FD_SET(server->fd, &readfds);
-		maxfd = server->fd;
+		nfds = 0;
 		
-		// Add all client fds to select
+		// Add server fd
+		pollfds[nfds].fd = server->fd;
+		pollfds[nfds].events = POLLIN;
+		nfds++;
+		
+		// Add all client fds to poll
 		client = server->clients;
-		while (client) {
-			FD_SET(client->fd, &readfds);
-			if (client->fd > maxfd)
-				maxfd = client->fd;
+		while (client && nfds < maxclients) {
+			pollfds[nfds].fd = client->fd;
+			pollfds[nfds].events = POLLIN;
+			nfds++;
 			client = client->next;
 		}
 		
-		if (select(maxfd + 1, &readfds, NULL, NULL, NULL) == -1) {
+		if (poll(pollfds, nfds, -1) == -1) {
 			if (errno == EINTR)
 				continue;
-			fatal("ERR: select failed:");
+			fatal("ERR: poll failed:");
 		}
 		
 		// Check for new connections
-		if (FD_ISSET(server->fd, &readfds)) {
+		if (pollfds[0].revents & POLLIN) {
 			int client_fd = accept_client(server->fd);
-			client_add(server, client_new(client_fd));
+			client_add(client_new(client_fd));
 			printf("New client connected (fd: %d)\n", client_fd);
 		}
 		
 		// Handle existing clients
-		client = server->clients;
-		while (client) {
-			next = client->next;
-			if (FD_ISSET(client->fd, &readfds)) {
-				handle_client(server, client);
+		for (int i = 1; i < nfds; i++) {
+			if (pollfds[i].revents & POLLIN) {
+				// Find the client with this fd
+				client = server->clients;
+				while (client) {
+					next = client->next;
+					if (client->fd == pollfds[i].fd) {
+						handle_client(client);
+						break;
+					}
+					client = next;
+				}
 			}
-			client = next;
 		}
 	}
+	
+	free(pollfds);
 }
 
-static void server_stop(server_t *server) {
-    server->online = false;
+static void server_stop(void) {
+	server_t *server = server_get();
+	server->online = false;
 }
 
-static void server_deinit(server_t *server) {
+static void server_deinit(void) {
+	server_t *server = server_get();
 	if (server->fd != -1)
 		close_socket(server->fd);
 }

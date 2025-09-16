@@ -3,9 +3,9 @@
 #include <unistd.h>
 
 static client_t *client_new(int fd) {
-	client_t *client = malloc(sizeof(client_t));
+	client_t *client = calloc(1, sizeof(client_t));
 	if (!client)
-		fatal("ERR: malloc failed:");
+		fatal("ERR: calloc failed:");
 	
 	client->fd = fd;
 	client->nick[0] = '\0';
@@ -25,12 +25,14 @@ static void client_free(client_t *client) {
 	}
 }
 
-static void client_add(server_t *server, client_t *client) {
+static void client_add(client_t *client) {
+	server_t *server = server_get();
 	client->next = server->clients;
 	server->clients = client;
 }
 
-static void client_remove(server_t *server, client_t *client) {
+static void client_remove(client_t *client) {
+	server_t *server = server_get();
 	client_t **c = &server->clients;
 	while (*c) {
 		if (*c == client) {
@@ -41,7 +43,8 @@ static void client_remove(server_t *server, client_t *client) {
 	}
 }
 
-static client_t *client_find_nick(server_t *server, const char *nick) {
+static client_t *client_find_nick(const char *nick) {
+	server_t *server = server_get();
 	client_t *c = server->clients;
 	while (c) {
 		if (strcmp(c->nick, nick) == 0)

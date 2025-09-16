@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <signal.h>
 #include <sys/select.h>
+#include <poll.h>
 
 typedef struct client_s client_t;
 struct client_s {
@@ -40,15 +41,17 @@ struct server_s {
 	channel_t *channels;
 };
 
+static server_t *server_get(void) {
+	static server_t server = {0};
+	return &server;
+}
+
 #include "arg.c"
 #include "util.c"
 #include "client.c"
-#include "channel.c" 
 #include "commands.c"
 #include "server.c"
-
-// Global server pointer for signal handling
-static server_t *g_server = NULL;
+#include "channel.c"
 
 static void signal_handler(int sig) {
 	switch (sig) {
@@ -56,16 +59,14 @@ static void signal_handler(int sig) {
 		case SIGTERM:
 		case SIGQUIT:
 			printf("\nReceived signal %d, shutting down server...\n", sig);
-			if (g_server)
-				server_stop(g_server);
+			server_stop();
 			break;
 		default:
 			break;
 	}
 }
 
-static void setup_signals(server_t *server) {
-	g_server = server;
+static void setup_signals(void) {
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
 	signal(SIGQUIT, signal_handler);
@@ -74,22 +75,27 @@ static void setup_signals(server_t *server) {
 
 int main(int ac, char **av) {
 	arg_t args;
-	server_t server;
 	int opt;
 
-	server_init(&server);
+	server_init();
 	arg_init(&args, ac, av);
 	while ((opt = arg_next(&args, ac, av)) != -1) {
 		switch (opt) {
 			case 'k':
-				server.pass = arg_value(&args, ac, av);
-				if (!server.pass)
-					return fprintf(stderr, "%s: password is empty!\n", args.av0), 1;
+				{
+					char *pass = arg_value(&args, ac, av);
+					if (!pass)
+						return fprintf(stderr, "%s: password is empty!\n", args.av0), 1;
+					server_get()->pass = pass;
+				}
 				break;
 			case 'p':
-				server.port = arg_value(&args, ac, av);
-				if (!server.port)
-					return fprintf(stderr, "%s: port is empty!", args.av0), 1;
+				{
+					char *port = arg_value(&args, ac, av);
+					if (!port)
+						return fprintf(stderr, "%s: port is empty!", args.av0), 1;
+					server_get()->port = port;
+				}
 				break;
 			case 'v':
 				printf("%s: version %s\n", args.av0, VERSION);
@@ -103,8 +109,8 @@ int main(int ac, char **av) {
 		printf("UNUSED ARGUMENT: %s\n", av[i]);
 	}
 
-	setup_signals(&server);
-	server_start(&server);
-	server_deinit(&server);
+	setup_signals();
+	server_start();
+	server_deinit();
 	return 0;
 }
