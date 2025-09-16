@@ -277,6 +277,9 @@ int main(int ac, char **av) {
 	arg_init(&args, ac, av);
 	while ((opt = arg_next(&args, ac, av)) != -1) {
 		switch (opt) {
+			case 'h':
+				printf("Usage: %s [-p port] [-k password] [-v]\n", args.av0);
+				return 0;
 			case 'k':
 				server.pass = arg_value(&args, ac, av);
 				if (!server.pass)
