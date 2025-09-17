@@ -67,7 +67,18 @@ static void channel_remove_client(channel_t *channel, client_t *client) {
 	}
 }
 
-static void channel_send_all(channel_t *channel, client_t *sender, char *message) {
+static bool channel_has_client(channel_t *channel, client_t *client) {
+	client_t *curr;
+	
+	for (curr = channel->clients; curr; curr = curr->next) {
+		if (curr == client)
+			return true;
+	}
+	
+	return false;
+}
+
+static void channel_broadcast(channel_t *channel, client_t *sender, char *message) {
 	client_t *client;
 	
 	for (client = channel->clients; client; client = client->next) {

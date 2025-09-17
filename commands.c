@@ -13,7 +13,7 @@ static void cmd_pass(client_t *client, char *args) {
 		return;
 	}
 
-	if (!args || strlen(args) == 0) {
+	if (!args || !*args) {
 		send_reply(client->fd, ":%s 461 PASS :Not enough parameters\r\n", SERVER_NAME);
 		return;
 	}
@@ -27,7 +27,7 @@ static void cmd_pass(client_t *client, char *args) {
 }
 
 static void cmd_nick(client_t *client, char *args) {
-	if (!args || strlen(args) == 0) {
+	if (!args || !*args) {
 		send_reply(client->fd, ":%s 431 :No nickname given\r\n", SERVER_NAME);
 		return;
 	}
@@ -85,7 +85,7 @@ static void cmd_join(client_t *client, char *args) {
 	client_t *curr;
 	char *name;
 	
-	if (!args || strlen(args) == 0) {
+	if (!args || !*args) {
 		send_reply(client->fd, ":%s 461 JOIN :Not enough parameters\r\n", SERVER_NAME);
 		return;
 	}
@@ -109,7 +109,7 @@ static void cmd_join(client_t *client, char *args) {
 	/* Send channel join to other users */
 	char join_msg[MAXMSG];
 	snprintf(join_msg, sizeof(join_msg), ":%s!%s@%s JOIN %s\r\n", client->nick, client->user, client->host, name);
-	channel_send_all(channel, client, join_msg);
+	channel_broadcast(channel, client, join_msg);
 	
 	/* Send NAMES list */
 	send_reply(client->fd, ":%s 353 %s = %s :", SERVER_NAME, client->nick, name);
@@ -127,7 +127,7 @@ static void cmd_part(client_t *client, char *args) {
 	char *name, *message;
 	char part_msg[MAXMSG];
 	
-	if (!args || strlen(args) == 0) {
+	if (!args || !*args) {
 		send_reply(client->fd, ":%s 461 PART :Not enough parameters\r\n", SERVER_NAME);
 		return;
 	}
@@ -147,16 +147,7 @@ static void cmd_part(client_t *client, char *args) {
 	}
 	
 	/* Check if user is in channel */
-	client_t *curr;
-	bool in_channel = false;
-	for (curr = channel->clients; curr; curr = curr->next) {
-		if (curr == client) {
-			in_channel = true;
-			break;
-		}
-	}
-	
-	if (!in_channel) {
+	if (!channel_has_client(channel, client)) {
 		send_reply(client->fd, ":%s 442 %s :You're not on that channel\r\n", SERVER_NAME, name);
 		return;
 	}
@@ -165,7 +156,7 @@ static void cmd_part(client_t *client, char *args) {
 	if (message && message[0] == ':')
 		message++;
 	
-	if (message && strlen(message) > 0) {
+	if (message && *message) {
 		snprintf(part_msg, sizeof(part_msg), ":%s!%s@%s PART %s :%s\r\n", 
 			client->nick, client->user, client->host, name, message);
 	} else {
@@ -174,7 +165,7 @@ static void cmd_part(client_t *client, char *args) {
 	}
 	
 	send_reply(client->fd, "%s", part_msg);
-	channel_send_all(channel, client, part_msg);
+	channel_broadcast(channel, client, part_msg);
 	
 	/* Remove client from channel */
 	channel_remove_client(channel, client);
@@ -186,7 +177,7 @@ static void cmd_privmsg(client_t *client, char *args) {
 	channel_t *target_channel;
 	char msg[MAXMSG];
 	
-	if (!args || strlen(args) == 0) {
+	if (!args || !*args) {
 		send_reply(client->fd, ":%s 411 :No recipient given (PRIVMSG)\r\n", SERVER_NAME);
 		return;
 	}
@@ -194,7 +185,7 @@ static void cmd_privmsg(client_t *client, char *args) {
 	target = args;
 	message = skip(args, ' ');
 	
-	if (!message || strlen(message) == 0) {
+	if (!message || !*message) {
 		send_reply(client->fd, ":%s 412 :No text to send\r\n", SERVER_NAME);
 		return;
 	}
@@ -214,21 +205,12 @@ static void cmd_privmsg(client_t *client, char *args) {
 		}
 		
 		/* Check if user is in channel */
-		client_t *curr;
-		bool in_channel = false;
-		for (curr = target_channel->clients; curr; curr = curr->next) {
-			if (curr == client) {
-				in_channel = true;
-				break;
-			}
-		}
-		
-		if (!in_channel) {
+		if (!channel_has_client(target_channel, client)) {
 			send_reply(client->fd, ":%s 404 %s :Cannot send to channel\r\n", SERVER_NAME, target);
 			return;
 		}
 		
-		channel_send_all(target_channel, client, msg);
+		channel_broadcast(target_channel, client, msg);
 	} else {
 		/* Private message */
 		target_client = client_find_nick(target);
@@ -257,7 +239,7 @@ static void cmd_quit(client_t *client, char *args) {
 			client_t *curr;
 			for (curr = channel->clients; curr; curr = curr->next) {
 				if (curr == client) {
-					channel_send_all(channel, client, quit_msg);
+					channel_broadcast(channel, client, quit_msg);
 					channel_remove_client(channel, client);
 					break;
 				}
@@ -286,8 +268,7 @@ static void process_message(client_t *client, char *line) {
 	};
 	
 	trim(line);
-	if (strlen(line) == 0)
-		return;
+	if (!*line) return;
 	
 	cmd = line;
 	args = skip(line, ' ');
