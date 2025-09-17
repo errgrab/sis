@@ -117,6 +117,25 @@ static char *eat(char *s, int (*p)(int), int r) {
 	return s;
 }
 
+/*
+ * Return the current token (whitespace-delimited) from *ps and
+ * advance *ps to the start of the next token. Multiple spaces are
+ * handled. The returned token is null-terminated in-place.
+ */
+static char *token(char **ps) {
+	char *s = *ps;
+	char *start, *end;
+
+	/* skip leading spaces */
+	start = eat(s, isspace, 1);
+	/* move to end of token */
+	end = eat(start, isspace, 0);
+	if (*end) *end++ = '\0';
+	/* skip spaces before next token */
+	*ps = eat(end, isspace, 1);
+	return start;
+}
+
 static char *skip(char *s, char c) {
 	while(*s != c && *s != '\0')
 		s++;

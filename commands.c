@@ -51,20 +51,17 @@ static void cmd_nick(client_t *client, char *args) {
 static void cmd_user(client_t *client, char *args) {
 	char *user, *mode, *unused, *real;
 	
-	if (!args) {
+	if (!args || !*args) {
 		send_reply(client->fd, ":%s 461 USER :Not enough parameters\r\n", SERVER_NAME);
 		return;
 	}
 	
-	user = args;
-	args = skip(args, ' ');
-	mode = args;
-	args = skip(args, ' ');
-	unused = args;
-	args = skip(args, ' ');
-	real = args;
+	user = token(&args);
+	mode = token(&args);
+	unused = token(&args);
+	real = token(&args);
 	
-	if (real && real[0] == ':')
+	if (real[0] == ':')
 		real++;
 	
 	strlcpy(client->user, user, sizeof(client->user));
