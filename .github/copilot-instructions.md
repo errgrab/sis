@@ -8,9 +8,12 @@ This is a "suckless-styled" IRC server implemented in C following the principle 
 
 ### Project Structure
 - `sis.c` - Main IRC server implementation
-- `util.c` - Utility functions for network operations (socket handling, address resolution)
-- `strlcpy.c` - Safe string copying implementation
-- `arg.h` - Command-line argument parsing library
+- `util.c` - Utility functions for network operations (socket handling, address resolution, string parsing)
+- `commands.c` - IRC command implementations (NICK, USER, JOIN, PART, PRIVMSG, etc.)
+- `client.c` - Client connection management
+- `channel.c` - Channel management functions
+- `server.c` - Server lifecycle and main loop
+- `arg.c` - Command-line argument parsing implementation
 - `config.def.h` - Default configuration template
 - `Makefile` - POSIX-compliant build system
 
@@ -42,8 +45,9 @@ This is a "suckless-styled" IRC server implemented in C following the principle 
 1. Keep it minimal - implement only what's necessary
 2. Follow existing code patterns and style
 3. Avoid adding new dependencies or complex abstractions
-4. Test with simple manual verification
-5. Document any configuration options in `config.def.h`
+4. Use existing utility functions (`eat()`, `token()`, `skip()`) for string parsing
+5. Test with simple manual verification
+6. Document any configuration options in `config.def.h`
 
 ### When Fixing Bugs
 1. Make surgical changes - modify as little code as possible
@@ -67,10 +71,53 @@ This is a "suckless-styled" IRC server implemented in C following the principle 
 
 ### Error Handling
 ```c
-static void fatal(const char *msg) {
-    perror(msg);
-    exit(-1);
+static void fatal(const char *fmt, ...) {
+    char buf[1024];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, sizeof buf, fmt, ap);
+    va_end(ap);
+    fprintf(stderr, "%s", buf);
+    if(fmt[0] && fmt[strlen(fmt) - 1] == ':')
+        fprintf(stderr, " %s\n", strerror(errno));
+    exit(1);
 }
+```
+
+### String Parsing Utilities
+```c
+/* Advance through characters matching predicate */
+static char *eat(char *s, int (*p)(int), int r) {
+    while(*s != '\0' && p((unsigned char)*s) == r)
+        s++;
+    return s;
+}
+
+/* Extract whitespace-delimited token and advance pointer */
+static char *token(char **ps) {
+    char *start = eat(*ps, isspace, 1);  /* skip leading spaces */
+    char *end = eat(start, isspace, 0);  /* find end of token */
+    if (*end) *end++ = '\0';
+    *ps = eat(end, isspace, 1);          /* skip to next token */
+    return start;
+}
+
+/* Skip to character and null-terminate */
+static char *skip(char *s, char c) {
+    while(*s != c && *s != '\0') s++;
+    if(*s != '\0') *s++ = '\0';
+    return s;
+}
+```
+
+### IRC Command Parameter Parsing
+```c
+/* Parse IRC USER command: USER <user> <mode> <unused> :<real> */
+user = token(&args);
+mode = token(&args);
+unused = token(&args);
+real = token(&args);
+real = (real[0] == ':') ? real + 1 : real;  /* strip leading ':' from real name */
 ```
 
 ### Structure Definition

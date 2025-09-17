@@ -60,9 +60,7 @@ static void cmd_user(client_t *client, char *args) {
 	mode = token(&args);
 	unused = token(&args);
 	real = token(&args);
-	
-	if (real[0] == ':')
-		real++;
+	real = (real[0] == ':') ? real + 1 : real;
 	
 	strlcpy(client->user, user, sizeof(client->user));
 	if (real)
