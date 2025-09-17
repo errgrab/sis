@@ -30,6 +30,7 @@ static void client_add(client_t *client) {
 	server_t *server = server_get();
 	client->next = server->clients;
 	server->clients = client;
+	printf("Client connected (fd: %d)\n", client->fd);
 }
 
 static void client_remove(client_t *client) {
@@ -42,6 +43,7 @@ static void client_remove(client_t *client) {
 		}
 		c = &(*c)->next;
 	}
+	printf("Client disconnected (fd: %d)\n", client->fd);
 }
 
 static client_t *client_find_nick(const char *nick) {

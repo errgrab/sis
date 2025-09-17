@@ -43,17 +43,13 @@ static void server_start(void) {
 		}
 		
 		if (poll(pollfds, nfds, -1) == -1) {
-			if (errno == EINTR)
-				continue;
+			if (errno == EINTR) continue;
 			fatal("ERR: poll failed:");
 		}
 		
 		// Check for new connections
-		if (pollfds[0].revents & POLLIN) {
-			int client_fd = accept_client(server->fd);
-			client_add(client_new(client_fd));
-			printf("New client connected (fd: %d)\n", client_fd);
-		}
+		if (pollfds[0].revents & POLLIN)
+			client_add(client_new(accept_client(server->fd)));
 		
 		// Handle existing clients
 		for (int i = 1; i < nfds; i++) {
@@ -71,7 +67,6 @@ static void server_start(void) {
 			}
 		}
 	}
-	
 	free(pollfds);
 }
 

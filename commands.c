@@ -269,7 +269,6 @@ static void cmd_quit(client_t *client, char *args) {
 			}
 		}
 	}
-	
 	client_remove(client);
 	client_free(client);
 }
