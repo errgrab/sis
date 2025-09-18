@@ -33,6 +33,7 @@ sic -h localhost -p 6667 -n alice
   - `USER` - User registration
   - `JOIN` - Join/create channels with automatic cleanup
   - `PRIVMSG` - Private messages and channel communication
+  - `WHO` - Query user information for channels, nicknames, or all users
   - `PING/PONG` - Keep-alive functionality  
   - `QUIT` - Clean disconnection with channel cleanup
 - **Proper Registration Flow**: Requires PASS (if set), NICK and USER before allowing IRC usage
@@ -156,6 +157,18 @@ echo -e "NICK alice\r\nUSER alice 0 * :Alice\r\nJOIN #test\r\nPRIVMSG #test :Hel
 echo -e "NICK bob\r\nUSER bob 0 * :Bob\r\nPRIVMSG alice :Hello Alice!\r\n" | nc localhost 6667
 ```
 
+### WHO Command Testing
+```bash
+# List all users on server
+echo -e "NICK alice\r\nUSER alice 0 * :Alice\r\nWHO\r\n" | nc localhost 6667
+
+# List users in a specific channel
+echo -e "NICK bob\r\nUSER bob 0 * :Bob\r\nJOIN #test\r\nWHO #test\r\n" | nc localhost 6667
+
+# Get information about a specific user
+echo -e "NICK charlie\r\nUSER charlie 0 * :Charlie\r\nWHO alice\r\n" | nc localhost 6667
+```
+
 ### Using Other IRC Clients
 
 The server works with any standard IRC client:
@@ -230,6 +243,7 @@ Implements core IRC functionality:
 - User registration and authentication
 - Channel management with automatic creation/cleanup
 - Private and channel messaging
+- WHO command for querying user information
 - Standard IRC error codes and responses
 - Proper nick!user@host formatting
 - NAMES list support for channels

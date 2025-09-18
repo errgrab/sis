@@ -1,17 +1,23 @@
 #include "config.h"
 
 #include <time.h>
+#include <poll.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <signal.h>
 #include <sys/select.h>
-#include <poll.h>
+
+#define MODE_INVITE_ONLY 0x01
+#define MODE_KEY		 0x02
+#define MODE_TOPIC_OP    0x04
+
+
 
 typedef struct client_s client_t;
 struct client_s {
@@ -28,6 +34,11 @@ struct client_s {
 typedef struct channel_s channel_t;
 struct channel_s {
 	char name[MAXCHAN];
+	char topic[MAXMSG];
+	char topic_who[MAXNICK];
+	time_t topic_time;
+	unsigned int mode;
+	char key[MAXNICK];
 	client_t *clients;
 	channel_t *next;
 };
