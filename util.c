@@ -57,7 +57,7 @@ static int listen_on(char *port) {
 	if (listen(sockfd, 10) == -1)
 		fatal("ERR: listen failed:");
 	return sockfd;
-};
+}
 
 static int accept_client(int server_fd) {
 	struct sockaddr_storage client_addr;

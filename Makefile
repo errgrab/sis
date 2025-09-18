@@ -3,7 +3,7 @@
 NAME = sis
 VERSION = 0.42
 
-SIS_CFLAGS = ${CFLAGS}
+SIS_CFLAGS = ${CFLAGS} -Wall -Wextra -Wpedantic -Werror -std=c99
 SIS_LDFLAGS = ${LDFLAGS}
 SIS_CPPFLAGS = ${LDFLAGS} -DVERSION=\"${VERSION}\" -D_GNU_SOURCE
 
@@ -27,17 +27,8 @@ config.h:
 	cp config.def.h $@
 
 clean:
-	rm -f ${BIN} ${OBJ} "${NAME}-${VERSION}.tar.gz"
+	rm -f ${BIN} ${OBJ}
 
 re: clean all
-
-dist:
-	mkdir -p "${NAME}-${VERSION}"
-	cp -fR LICENSE Makefile README.md arg.h config.def.h \
-		${SRC} util.c channel.c client.c commands.c server.c \
-		"${NAME}-${VERSION}"
-	tar -cf - "${NAME}-${VERSION}" | \
-		gzip -c > "${NAME}-${VERSION}.tar.gz"
-	rm -rf "${NAME}-${VERSION}"
 
 .PHONY: all clean re dist
