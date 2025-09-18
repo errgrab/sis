@@ -28,7 +28,7 @@ static void channel_free(channel_t *channel) {
 	free(channel);
 }
 
-static channel_t *channel_find(char *name) {
+static channel_t *channel_find(const char *name) {
 	channel_t *channel;
 	
 	for (channel = server_get()->channels; channel; channel = channel->next) {

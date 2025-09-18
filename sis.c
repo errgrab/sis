@@ -61,8 +61,8 @@ static server_t *server_get(void) {
 #undef strlcpy
 #include "arg.c"
 #include "util.c"
-#include "client.c"
 #include "channel.c"
+#include "client.c"
 #include "commands.c"
 #include "server.c"
 
