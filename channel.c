@@ -87,3 +87,4 @@ static void channel_broadcast(channel_t *channel, client_t *sender, char *messag
 		}
 	}
 }
+

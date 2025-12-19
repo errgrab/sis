@@ -3,8 +3,8 @@
 NAME = sis
 VERSION = 0.42
 
-SIS_CFLAGS = ${CFLAGS} -Wall -Wextra -Wpedantic -Werror -std=c99
-SIS_LDFLAGS = ${LDFLAGS}
+SIS_CFLAGS = ${CFLAGS} -Wall -Wextra -Wpedantic -Werror -std=c99 -fsanitize=address -g
+SIS_LDFLAGS = ${LDFLAGS} -fsanitize=address
 SIS_CPPFLAGS = ${LDFLAGS} -DVERSION=\"${VERSION}\" -D_GNU_SOURCE
 
 BIN = sis
